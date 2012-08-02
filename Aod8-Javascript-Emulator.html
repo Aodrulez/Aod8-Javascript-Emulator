@@ -1,0 +1,305 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>
+      MalCon
+    </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style type="text/css" media="screen"> 
+      body {
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      background : #ffffff;
+    }
+      img {
+      border-style: none;
+    }
+      textarea,input {
+      padding: 9px;
+      border: solid 2px #E5E5E5;
+      outline: 0;
+      font:  8pt Lucida console;
+      width: 200px;
+      background: #474747 url('bg_form.png') left top repeat-x;
+      background: -webkit-gradient(linear, left top, left 25, from(#FFFFFF), color-stop(4%, #EEEEEE), to(#FFFFFF));
+      background: -moz-linear-gradient(top, #FFFFFF, #EEEEEE 1px, #FFFFFF 25px);
+      box-shadow: rgba(0,0,0, 0.1) 0px 0px 8px;
+      -moz-box-shadow: rgba(0,0,0, 0.1) 0px 0px 8px;
+      -webkit-box-shadow: rgba(0,0,0, 0.1) 0px 0px 8px;
+	}
+  textarea {
+  width: 500px;
+  max-width: 500px;
+  height: 430px;
+  line-height: 150%;
+}
+  input {
+  width: 955px;
+  max-width: 955px;
+  height: 15px;
+  line-height: 150%;
+}
+  input:hover, textarea:hover,
+  input:focus, textarea:focus {
+  border-color: #C9C9C9;
+  -webkit-box-shadow: rgba(0, 0, 0, 0.15) 0px 0px 8px;
+}
+  button {
+  width: 70px;
+  height: 35px;
+  padding: 9px 15px;
+  background: #617798;
+  border: 0;
+  font-size: 14px;
+  color: #FFFFFF;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+  label {
+  margin-left: 10px;
+  color: #999999;
+}
+  #wrapper {
+  margin: 0 auto 0 auto;
+  text-align: center;
+  width: 0 auto;
+}
+  html>body #wrapper {
+  border: 0px solid #fff;
+  border-color: transparent;
+  border-top: 0;
+  border-bottom: 0;
+  overflow:auto;
+}
+--></style>
+  </head>
+  <body>
+    <br>
+    <br>
+    <div id="wrapper" >
+      <div style="overflow: auto;">
+        <textarea id="terminal" readonly="readonly" onkeypress="addchar(event.which)" onkeyup="specialchar(event.which)">
+        </textarea>
+        <canvas id="debug" width="200" height="450" style="border:1px solid #c3c3c3;">
+          Your browser does not support the HTML5 canvas tag.
+        </canvas>
+        <script type="text/javascript">
+          var textArea = document.getElementById('terminal');
+          var inputchar="";
+          function getchar()
+          {
+            if(inputchar == ""){
+              inputchar = prompt("Enter your input");
+              
+              if(inputchar != ""){
+                inputchar=inputchar+String.fromCharCode(0x0a);
+                var b=inputchar.charCodeAt(0);
+                inputchar = inputchar.substr(1);
+                print(String.fromCharCode(b));
+                return b;
+              }
+              else
+              {
+                print("\n");
+                return 0x0a;
+              }
+              
+            }
+            else
+            {
+              var b=inputchar.charCodeAt(0);
+              if(b == "\n"){
+                inputchar = "";
+              }else{
+                inputchar = inputchar.substr(1);
+              }
+              print(String.fromCharCode(b));
+              return b;
+            }
+          }
+          function putchar(char)
+          {
+            var obj=document.getElementById("terminal");
+            obj.value+=String.fromCharCode(char);
+          }
+          function print(text)
+          {
+            var obj=document.getElementById("terminal");
+            obj.value+=text;
+          }
+          //debug-canvas
+          var d=document.getElementById("debug");
+          var ctx1=d.getContext("2d");
+          ctx1.shadowOffsetX = 0;
+          ctx1.shadowOffsetY = 1;
+          ctx1.shadowBlur =1;
+          ctx1.shadowColor = "black";
+          ctx1.font = "bold 10pt Lucida console";
+          ctx1.fillStyle   = '#474747';
+          ctx1.strokeStyle = '#fff';
+          ctx1.fillRect(0,0,200,450);
+          ctx1.lineWidth  = 3;
+          ctx1.fill();
+          ctx1.fillStyle   = '#fff';
+          //registers
+          //defining the AOD8 architecture
+          //-------------------------------------------------------------------
+          //var ROM=[0x1A,0x41,0x15,0x3a,0x3c];
+          var STACK = new Array(65535);
+          var A=0,B=0,SP=0,FLAG=0,OPCODE=0,IP=0;
+          function reset()
+          {
+            A=0,B=0,SP=0,FLAG=0,OPCODE=0,IP=0;
+            var obj=document.getElementById("terminal");
+            obj.value="";
+          }
+          function updatedebug()
+          {
+            ctx1.fillStyle   = '#474747';
+            ctx1.strokeStyle = '#fff';
+            ctx1.fillRect(0,0,200,450);
+            ctx1.lineWidth  = 3;
+            ctx1.fill();
+            ctx1.fillStyle   = '#fff';
+            ctx1.fillText("-[Registers Window]-", 10, 20);
+            ctx1.fillText(" IP      : "+IP, 10, 60);
+            ctx1.fillText(" SP      : "+SP, 10, 80);
+            ctx1.fillText(" A       : "+A, 10, 100);
+            ctx1.fillText(" B       : "+B, 10, 120);
+            ctx1.fillText(" FLAG    : "+FLAG, 10, 140);
+            ctx1.fillText(" ROM[IP] : "+ROM[IP], 10, 160);
+            ctx1.fillText("------------------------", 0, 200);
+            ctx1.fillText("  -[Stack Window]-", 10, 220);
+            var temp=SP-5;
+            ctx1.fillText(" STACK["+temp+"]  : "+String.fromCharCode(STACK[temp]), 10, 260);
+            temp++;
+            ctx1.fillText(" STACK["+temp+"]  : "+String.fromCharCode(STACK[temp]), 10, 280);
+            temp++;
+            ctx1.fillText(" STACK["+temp+"]  : "+String.fromCharCode(STACK[temp]), 10, 300);
+            temp++;
+            ctx1.fillText(" STACK["+temp+"]  : "+String.fromCharCode(STACK[temp]), 10, 320);
+            temp++;
+            ctx1.fillText(" STACK["+temp+"]  : "+String.fromCharCode(STACK[temp]), 10, 340);
+            temp++;
+            ctx1.fillText(" STACK["+temp+"]  : "+String.fromCharCode(STACK[temp]), 10, 360);
+            temp++;
+            ctx1.fillText(" STACK["+temp+"]  : "+String.fromCharCode(STACK[temp]), 10, 380);
+            ctx1.fillText("   (c) Aodrulez.", 10, 430);
+          }
+          function run()
+          {
+            reset();
+            print("+----------------------------+\n");
+            print("|  Aodrulez's Aod8 Emulator  |\n");
+            print("+----------------------------+\n");
+            putchar(0x0a);
+            print("[!] Registers initialised to 0.\n");
+            print("[!] Booting using the Boot-Rom.\n")
+              print("-------------------------------\n\n");
+            while(IP>=0 && OPCODE!=0x3c)
+            {
+              textArea.scrollTop = 99999;
+              updatedebug();
+              OPCODE=ROM[IP];
+              switch(OPCODE)
+              {	//MOV
+                case 0x11: A=STACK[SP];IP++;break;
+                case 0x12: B=STACK[SP];IP++;break;
+                case 0x13: A=B;IP++;break;
+                case 0x14: B=A;IP++;break;
+                case 0x15: STACK[SP]=A;IP++;break;
+                case 0x16: STACK[SP]=B;IP++;break;
+                case 0x17: SP=A;IP++;break;
+                case 0x18: SP=B;IP++;break;
+                case 0x19: A=SP;IP++;break;
+                case 0x1A: A=ROM[++IP];IP++;break;
+                case 0x1B: B=ROM[++IP];IP++;break;
+                  //Addition
+                case 0x1C: A=A+ROM[++IP];IP++;break;
+                case 0x1D: A=A+B;IP++;break;
+                case 0x1E: B=B+ROM[++IP];IP++;break;
+                case 0x1F: B=B+A;IP++;break;
+                  //SUBSTRACTION
+                case 0x20: A=A-ROM[++IP];IP++;break;
+                case 0x21: A=A-B;IP++;break;
+                case 0x22: B=B-ROM[++IP];IP++;break;
+                case 0x23: B=B-A;IP++;break;
+                  //Compare
+                case 0x24: FLAG=A-B;IP++;break;
+                case 0x25: FLAG=A-ROM[++IP];IP++;break;
+                case 0x26: FLAG=B-ROM[++IP];IP++;break;
+                  //JMP
+                case 0x27: IP=A;break;
+                case 0x28: IP=B;break;
+                case 0x29: IP=IP+ROM[++IP]+1;break;
+                  //JNE
+                case 0x2A: if(FLAG!=0){IP=A;}else{IP++;};break;
+                case 0x2B: if(FLAG!=0){IP=B;}else{IP++;};break;
+                case 0x2C: if(FLAG!=0){IP=IP+ROM[++IP];}else{IP++;IP++;};break;
+                  //JE
+                case 0x2D: if(FLAG==0){IP=A;}else{IP++;};break;
+                case 0x2E: if(FLAG==0){IP=B;}else{IP++;};break;
+                case 0x2F: if(FLAG==0){IP=IP+ROM[++IP];}else{IP++;IP++;};break;
+                  //JGE
+                case 0x30: if(FLAG>=0){IP=A;}else{IP++;};break;
+                case 0x31: if(FLAG>=0){IP=B;}else{IP++;};break;
+                case 0x32: if(FLAG>=0){IP=IP+ROM[++IP];}else{IP++;IP++;};break;
+                  //JLE
+                case 0x33: if(FLAG<=0){IP=A;}else{IP++;};break;
+                case 0x34: if(FLAG<=0){IP=B;}else{IP++;};break;
+                case 0x35: if(FLAG<=0){IP=IP+ROM[++IP];}else{IP++;IP++;};break;
+                  //INC
+                case 0x36: ++A;IP++;break;
+                case 0x37: ++B;IP++;break;
+                case 0x38: ++SP;IP++;break;
+                  //MISC
+                case 0x39: STACK[SP]=getchar();IP++;break;
+                case 0x3A: putchar(STACK[SP]);IP++;break;
+                case 0x3B: IP++;break;
+                case 0x3C: print("\nHalt.");exit(0);
+                case 0x3D: IP=IP-ROM[++IP];break;
+                  //case 0x3E: sleep(ROM[++IP]);++IP;break; too much head-ache to implement basic fuckin Sleep() in js :-/
+                case 0x3E: ++IP;++IP;break;
+                default:{print("\nInvalid Boot-rom.");exit(0);}
+              }
+            }
+          }
+          function loadrom(dropdown){
+            var myindex  = dropdown.selectedIndex;
+            var SelValue = dropdown.options[myindex].value;
+            alert("Loading.. Please be patient. It may take some time depending on your browser.");
+            var fileref=document.createElement('script');
+            fileref.setAttribute("type","text/javascript");
+            fileref.setAttribute("src", SelValue);
+            document.getElementsByTagName("head")[0].appendChild(fileref);
+          }
+        </script>
+        <form>
+          <p class="name">
+            <label for="name">
+              Select a ROM & click Run! : 
+            </label>
+            <select name=select1>
+              <option>
+                CTM-2011.rom
+              </option>
+              <option>
+                BrainfuckEmulator.rom
+              </option>
+            </select>
+          </p>
+          <p class="submit">
+            <button type="button" onClick="loadrom(this.form.select1);" >
+              Run!
+            </button>
+            <button type="button" onClick="document.location.reload(true)">
+              Reset
+            </button>
+          </p>
+        </form>
+      </div>
+    </body>
+  </html>
+  
